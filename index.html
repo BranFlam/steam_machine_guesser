@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Steam Machine Guesser</title>
     <style>
         body {
@@ -14,21 +14,26 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            padding: 15px;
+            box-sizing: border-box;
         }
 
         #steam-container {
             background-color: #171a21;
             border: 2px solid #3a424a;
             border-radius: 8px;
-            padding: 30px;
-            width: 680px;
+            padding: 20px;
+            width: 100%;
+            max-width: 680px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             text-align: center;
+            box-sizing: border-box;
         }
 
         #steam-header h2 {
             color: #66c0f4;
-            font-size: 28px;
+            font-size: 24px;
+            margin-top: 0;
             margin-bottom: 5px;
             letter-spacing: 2px;
         }
@@ -36,14 +41,15 @@
         .subtitle {
             color: #8f98a0;
             font-size: 14px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .wheels-frame {
             display: flex;
+            flex-direction: row;
             justify-content: space-around;
             gap: 20px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         .wheel-wrapper {
@@ -52,6 +58,11 @@
             border: 1px solid #2a313a;
             border-radius: 6px;
             padding: 15px;
+            flex: 1;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .pointer {
@@ -66,7 +77,9 @@
 
         canvas {
             display: block;
-            max-width: 100%;
+            width: 100%;
+            height: auto;
+            max-width: 300px;
         }
 
         .wheel-label {
@@ -80,14 +93,17 @@
         #spin-button {
             background: linear-gradient( to right, #47b230 0%, #5cba38 100%);
             border: none;
-            border-radius: 3px;
+            border-radius: 4px;
             color: #ffffff;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
-            padding: 15px 60px;
+            padding: 16px 0;
+            width: 100%;
+            max-width: 300px;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: background 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #spin-button:hover {
@@ -98,7 +114,7 @@
             background-color: #101216;
             border: 1px solid #2a313a;
             border-radius: 4px;
-            margin-top: 30px;
+            margin-top: 25px;
             padding: 20px;
         }
 
@@ -111,8 +127,36 @@
 
         #date-result {
             color: #66c0f4;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
+        }
+
+        /* Responsive design rules just for phone screens */
+        @media (max-width: 600px) {
+            #steam-header h2 {
+                font-size: 22px;
+            }
+            
+            .wheels-frame {
+                flex-direction: column;
+                align-items: center;
+                gap: 25px;
+            }
+
+            .wheel-wrapper {
+                width: 100%;
+                max-width: 280px;
+                padding: 10px;
+            }
+
+            canvas {
+                max-width: 260px;
+            }
+            
+            #spin-button {
+                max-width: 280px;
+                font-size: 20px;
+            }
         }
     </style>
 </head>
