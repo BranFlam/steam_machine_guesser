@@ -1,109 +1,171 @@
-const mCanvas = document.getElementById('month-wheel');
-const dCanvas = document.getElementById('day-wheel');
-const mCtx = mCanvas.getContext('2d');
-const dCtx = dCanvas.getContext('2d');
+// --- Game Setup ---
+const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
+
+// Get HTML Elements
+const monthCanvas = document.getElementById('month-wheel');
+const dayCanvas = document.getElementById('day-wheel');
 const spinButton = document.getElementById('spin-button');
 const statusLabel = document.getElementById('status-label');
 const dateResult = document.getElementById('date-result');
 
-// 2026 Schedule parameters
-const months = ['JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
-const days = Array.from({length: 31}, (_, i) => i + 1);
+// Get Drawing Contexts
+const monthCtx = monthCanvas.getContext('2d');
+const dayCtx = dayCanvas.getContext('2d');
 
-const colors = ['#17202d', '#1e2b38'];
+// Game State Variables
+let monthAngle = 0;
+let dayAngle = 0;
+let isSpinning = false;
 
-function drawWheel(ctx, segments, radius) {
-  const numSegs = segments.length;
-  const angle = (2 * Math.PI) / numSegs;
-  ctx.clearRect(0, 0, radius * 2, radius * 2);
-  
-  segments.forEach((val, i) => {
+// --- High-Quality Canvas Setup (Fixes Desktop Wobble) ---
+function setupCanvas(canvas) {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * 2;
+    canvas.height = rect.height * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+}
+
+setupCanvas(monthCanvas);
+setupCanvas(dayCanvas);
+
+// --- Drawing the Wheels ---
+function drawWheel(ctx, items, currentAngle) {
+    const size = 150; // Half of 300px canvas CSS display size
+    ctx.clearRect(0, 0, size * 2, size * 2);
+    
+    ctx.save();
+    ctx.translate(size, size);
+    ctx.rotate(currentAngle);
+    
+    const totalItems = items.length;
+    const arcSize = (Math.PI * 2) / totalItems;
+    
+    for (let i = 0; i < totalItems; i++) {
+        const angle = i * arcSize;
+        
+        // Draw pizza slice segment
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, size - 5, angle, angle + arcSize);
+        ctx.closePath();
+        
+        // Alternating dark theme colors
+        ctx.fillStyle = i % 2 === 0 ? '#1b2838' : '#2a475e';
+        ctx.fill();
+        ctx.strokeStyle = '#3a424a';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        // Draw Text inside slice
+        ctx.save();
+        ctx.rotate(angle + arcSize / 2);
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 11px sans-serif";
+        ctx.fillText(items[i], size - 20, 0);
+        ctx.restore();
+    }
+    
+    // Center inner cap
     ctx.beginPath();
-    ctx.moveTo(radius, radius);
-    ctx.arc(radius, radius, radius - 5, i * angle, (i + 1) * angle);
-    ctx.fillStyle = colors[i % 2];
+    ctx.arc(0, 0, 25, 0, Math.PI * 2);
+    ctx.fillStyle = '#101216';
     ctx.fill();
-    ctx.strokeStyle = '#2a475e';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#3a424a';
     ctx.stroke();
     
-    // Text
-    ctx.save();
-    ctx.translate(radius, radius);
-    ctx.rotate(i * angle + angle / 2);
-    ctx.fillStyle = '#9099a1';
-    ctx.font = numSegs > 12 ? 'bold 9px Arial' : 'bold 12px Arial';
-    ctx.textAlign = 'right';
-    ctx.fillText(val, radius - 20, 4);
     ctx.restore();
-  });
-  
-  // Valve Hub Center Cap
-  ctx.beginPath();
-  ctx.arc(radius, radius, 25, 0, 2 * Math.PI);
-  ctx.fillStyle = '#101822';
-  ctx.fill();
-  ctx.strokeStyle = '#3a5a74';
-  ctx.stroke();
 }
 
-let currentMonthRot = 0;
-let currentDayRot = 0;
+// Initial draw of the stationary wheels
+drawWheel(monthCtx, months, monthAngle);
+drawWheel(dayCtx, days, dayAngle);
 
-function calculateSpin(currentRot, targetIndex, totalSegments) {
-  const degPerSeg = 360 / totalSegments;
-  const targetCenterDeg = (targetIndex * degPerSeg) + (degPerSeg / 2);
-  
-  let degToPointer = 270 - targetCenterDeg;
-  if (degToPointer < 0) degToPointer += 360;
-  
-  const currentModulo = currentRot % 360;
-  let diff = degToPointer - currentModulo;
-  if (diff <= 0) diff += 360;
-  
-  // 5 base spins + precise alignment adjustment
-  return currentRot + 1800 + diff;
+// --- Sequential Spin Logic ---
+function spinSequence() {
+    isSpinning = true;
+    spinButton.disabled = true;
+    spinButton.style.opacity = "0.5";
+    
+    // Choose winning random items
+    const targetMonthIndex = Math.floor(Math.random() * months.length);
+    const targetDayIndex = Math.floor(Math.random() * days.length);
+    
+    // Calculate final spin angles (multiple rotations + alignment matching the arrow pointer)
+    const monthArc = (Math.PI * 2) / months.length;
+    const finalMonthAngle = (Math.PI * 2 * 5) - (targetMonthIndex * monthArc) - (monthArc / 2) - (Math.PI / 2);
+    
+    const dayArc = (Math.PI * 2) / days.length;
+    const finalDayAngle = (Math.PI * 2 * 8) - (targetDayIndex * dayArc) - (dayArc / 2) - (Math.PI / 2);
+    
+    // Reset positions smoothly
+    let currentMonthAngle = monthAngle % (Math.PI * 2);
+    let currentDayAngle = dayAngle % (Math.PI * 2);
+    
+    let startTime = null;
+    const monthDuration = 3000; // 3 seconds for Month Wheel
+    const dayDuration = 3000;   // 3 seconds for Day Wheel
+    
+    statusLabel.innerHTML = "SYSTEM STATUS: LOCKING MONTH...";
+    dateResult.innerHTML = "CALCULATING...";
+
+    function animate(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        
+        if (elapsed < monthDuration) {
+            // --- Phase 1: Only Spin Month Wheel ---
+            const progress = elapsed / monthDuration;
+            // Easing formula for smooth slow down
+            const easeOut = 1 - Math.pow(1 - progress, 3); 
+            monthAngle = currentMonthAngle + (finalMonthAngle - currentMonthAngle) * easeOut;
+            
+            drawWheel(monthCtx, months, monthAngle);
+            requestAnimationFrame(animate);
+        } 
+        else if (elapsed < monthDuration + dayDuration) {
+            // --- Phase 2: Lock Month, Spin Day Wheel ---
+            if (statusLabel.innerHTML !== "SYSTEM STATUS: LOCKING DAY...") {
+                statusLabel.innerHTML = "SYSTEM STATUS: LOCKING DAY...";
+                // Snap Month exactly to target position
+                monthAngle = finalMonthAngle;
+                drawWheel(monthCtx, months, monthAngle);
+            }
+            
+            const dayElapsed = elapsed - monthDuration;
+            const progress = dayElapsed / dayDuration;
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            dayAngle = currentDayAngle + (finalDayAngle - currentDayAngle) * easeOut;
+            
+            drawWheel(dayCtx, days, dayAngle);
+            requestAnimationFrame(animate);
+        } 
+        else {
+            // --- Phase 3: Lock Day & Announce Winner ---
+            dayAngle = finalDayAngle;
+            drawWheel(dayCtx, days, dayAngle);
+            
+            statusLabel.innerHTML = "SYSTEM STATUS: ALLOCATION READY";
+            
+            // Format date presentation cleanly
+            const finalMonth = months[targetMonthIndex];
+            const finalDay = days[targetDayIndex];
+            dateResult.innerHTML = `${finalMonth} ${finalDay}, 2026`;
+            
+            // Re-enable button
+            isSpinning = false;
+            spinButton.disabled = false;
+            spinButton.style.opacity = "1";
+        }
+    }
+    
+    requestAnimationFrame(animate);
 }
 
-spinButton.onclick = () => {
-  spinButton.disabled = true;
-  statusLabel.innerText = "SYNCHRONIZING RECONCILIATION THREADS...";
-  dateResult.innerText = "CALCULATING MATRICES...";
-
-  // 1. Generate a valid target timestamp from July 6, 2026 to Dec 31, 2026
-  const start = new Date(2026, 6, 6); 
-  const end = new Date(2026, 11, 31);
-  const randomTimestamp = start.getTime() + Math.random() * (end.getTime() - start.getTime());
-  const targetDate = new Date(randomTimestamp);
-  
-  // 2. Map target date to our array indices
-  const monthIndex = targetDate.getMonth() - 6; // July is index 0
-  const dayIndex = targetDate.getDate() - 1;    // Day 1 is index 0
-
-  // 3. Compute continuous execution angles
-  currentMonthRot = calculateSpin(currentMonthRot, monthIndex, months.length);
-  currentDayRot = calculateSpin(currentDayRot, dayIndex, days.length);
-  
-  // 4. Trigger physics animations via hardware transitions
-  mCanvas.style.transition = 'transform 4.5s cubic-bezier(0.1, 0.8, 0.2, 1)';
-  dCanvas.style.transition = 'transform 5s cubic-bezier(0.1, 0.8, 0.2, 1)';
-  
-  mCanvas.style.transform = `rotate(${currentMonthRot}deg)`;
-  dCanvas.style.transform = `rotate(${currentDayRot}deg)`;
-  
-  // 5. Present result upon engine deceleration
-  setTimeout(() => {
-    statusLabel.innerText = "HARDWARE ALLOCATION DATE:";
-    dateResult.innerText = targetDate.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    spinButton.disabled = false;
-  }, 5200);
-};
-
-// Initial Build
-drawWheel(mCtx, months, 150);
-drawWheel(dCtx, days, 150);
+// Event Listener
+spinButton.addEventListener('click', () => {
+    if (!isSpinning) spinSequence();
+});
