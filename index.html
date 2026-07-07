@@ -24,7 +24,7 @@
             border-radius: 8px;
             padding: 20px;
             width: 100%;
-            max-width: 450px; /* Slimmed down since we only show one wheel */
+            max-width: 400px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             text-align: center;
             box-sizing: border-box;
@@ -48,6 +48,7 @@
             display: flex;
             justify-content: center;
             margin-bottom: 25px;
+            min-height: 340px; /* Keeps layout stable during switch */
         }
 
         .wheel-wrapper {
@@ -61,10 +62,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            transition: opacity 0.3s ease;
         }
 
-        /* This utility class hides a wheel completely */
         .hidden {
             display: none !important;
         }
@@ -147,13 +146,13 @@
         <div class="wheels-frame">
             <div id="month-wrapper" class="wheel-wrapper">
                 <div class="pointer">▼</div>
-                <canvas id="month-wheel" width="300" height="300"></canvas>
+                <canvas id="month-wheel" width="600" height="600" style="width:300px; height:300px;"></canvas>
                 <div class="wheel-label">MONTH</div>
             </div>
 
             <div id="day-wrapper" class="wheel-wrapper hidden">
                 <div class="pointer">▼</div>
-                <canvas id="day-wheel" width="300" height="300"></canvas>
+                <canvas id="day-wheel" width="600" height="600" style="width:300px; height:300px;"></canvas>
                 <div class="wheel-label">DAY</div>
             </div>
         </div>
@@ -166,6 +165,12 @@
         </div>
     </div>
 
-    <script src="js.js"></script>
-</body>
-</html>
+    <script>
+        const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+        const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString());
+
+        const monthCanvas = document.getElementById('month-wheel');
+        const dayCanvas = document.getElementById('day-wheel');
+        const monthWrapper = document.getElementById('month-wrapper');
+        const dayWrapper = document.getElementById('day-wrapper');
+        const spinButton
