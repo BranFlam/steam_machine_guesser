@@ -24,7 +24,7 @@
             border-radius: 8px;
             padding: 20px;
             width: 100%;
-            max-width: 680px;
+            max-width: 450px; /* Slimmed down since we only show one wheel */
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             text-align: center;
             box-sizing: border-box;
@@ -46,9 +46,7 @@
 
         .wheels-frame {
             display: flex;
-            flex-direction: row;
-            justify-content: space-around;
-            gap: 20px;
+            justify-content: center;
             margin-bottom: 25px;
         }
 
@@ -58,11 +56,17 @@
             border: 1px solid #2a313a;
             border-radius: 6px;
             padding: 15px;
-            flex: 1;
+            width: 100%;
             max-width: 300px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            transition: opacity 0.3s ease;
+        }
+
+        /* This utility class hides a wheel completely */
+        .hidden {
+            display: none !important;
         }
 
         .pointer {
@@ -130,34 +134,6 @@
             font-size: 20px;
             font-weight: bold;
         }
-
-        /* Responsive design rules just for phone screens */
-        @media (max-width: 600px) {
-            #steam-header h2 {
-                font-size: 22px;
-            }
-            
-            .wheels-frame {
-                flex-direction: column;
-                align-items: center;
-                gap: 25px;
-            }
-
-            .wheel-wrapper {
-                width: 100%;
-                max-width: 280px;
-                padding: 10px;
-            }
-
-            canvas {
-                max-width: 260px;
-            }
-            
-            #spin-button {
-                max-width: 280px;
-                font-size: 20px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -169,13 +145,13 @@
         </div>
 
         <div class="wheels-frame">
-            <div class="wheel-wrapper">
+            <div id="month-wrapper" class="wheel-wrapper">
                 <div class="pointer">▼</div>
                 <canvas id="month-wheel" width="300" height="300"></canvas>
                 <div class="wheel-label">MONTH</div>
             </div>
 
-            <div class="wheel-wrapper">
+            <div id="day-wrapper" class="wheel-wrapper hidden">
                 <div class="pointer">▼</div>
                 <canvas id="day-wheel" width="300" height="300"></canvas>
                 <div class="wheel-label">DAY</div>
