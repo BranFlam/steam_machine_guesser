@@ -113,6 +113,13 @@
         #spin-button:hover {
             background: linear-gradient( to right, #51ca37 0%, #68d341 100%);
         }
+        
+        #spin-button:disabled {
+            background: #3a424a;
+            color: #8f98a0;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
 
         #display-container {
             background-color: #101216;
@@ -175,4 +182,166 @@
         <button id="spin-button">SPIN</button>
 
         <div id="display-container">
-            <div id="status-
+            <div id="status-label">SYSTEM STATUS: IDLE</div>
+            <div id="date-result">AWAITING SEQUENCE INITIATION</div>
+        </div>
+    </div>
+
+    <script>
+        // Data arrays for the wheels
+        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+        const days = Array.from({length: 31}, (_, i) => (i + 1).toString());
+
+        // Wheel State
+        let monthAngle = 0;
+        let dayAngle = 0;
+        let monthVelocity = 0;
+        let dayVelocity = 0;
+        let isSpinningMonth = false;
+        let isSpinningDay = false;
+        let selectedMonth = "";
+        let selectedDay = "";
+
+        // Canvas Setup
+        const monthCanvas = document.getElementById('month-wheel');
+        const dayCanvas = document.getElementById('day-wheel');
+        const monthCtx = monthCanvas.getContext('2d');
+        const dayCtx = dayCanvas.getContext('2d');
+
+        // Steam-themed slice colors
+        const colors = ["#2a475e", "#1b2838"];
+
+        // Renders the wheel on the canvas
+        function drawWheel(ctx, items, angleOffset) {
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = width / 2;
+            const arc = 2 * Math.PI / items.length;
+
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < items.length; i++) {
+                const angle = angleOffset + i * arc;
+                
+                // Draw slice
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + arc, false);
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.fill();
+                ctx.strokeStyle = "#101216"; // Divider color
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Draw text
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle + arc / 2);
+                ctx.textAlign = "right";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#c7d5e0";
+                
+                // Scale font size based on slice count
+                const fontSize = items.length > 12 ? 24 : 34;
+                ctx.font = `bold ${fontSize}px 'Motiva Sans', Arial, sans-serif`;
+                
+                ctx.fillText(items[i], radius - 25, 0);
+                ctx.restore();
+            }
+        }
+
+        // Calculates which slice is pointing to the top triangle
+        function getResult(items, angleOffset) {
+            const arc = 2 * Math.PI / items.length;
+            
+            // Normalize angle to 0 - 2PI
+            let normalizedAngle = angleOffset % (2 * Math.PI);
+            if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
+
+            // Pointer is at the top (270 degrees or 1.5 * PI)
+            let topAngle = (1.5 * Math.PI - normalizedAngle) % (2 * Math.PI);
+            if (topAngle < 0) topAngle += 2 * Math.PI;
+
+            const index = Math.floor(topAngle / arc);
+            return items[index];
+        }
+
+        // Animation Loop
+        function animate() {
+            if (isSpinningMonth) {
+                monthAngle += monthVelocity;
+                monthVelocity *= 0.985; // Friction
+                
+                if (monthVelocity < 0.002) {
+                    isSpinningMonth = false;
+                    monthVelocity = 0;
+                    selectedMonth = getResult(months, monthAngle);
+                    
+                    document.getElementById('status-label').innerText = "SYSTEM STATUS: MONTH SECURED";
+                    document.getElementById('date-result').innerText = selectedMonth + " ...";
+                    
+                    // Pause briefly, then transition to day wheel
+                    setTimeout(() => {
+                        document.getElementById('month-wrapper').classList.add('hidden');
+                        document.getElementById('day-wrapper').classList.remove('hidden');
+                        document.getElementById('status-label').innerText = "SYSTEM STATUS: CALCULATING DAY...";
+                        isSpinningDay = true;
+                        dayVelocity = Math.random() * 0.2 + 0.4; 
+                        requestAnimationFrame(animate);
+                    }, 1200);
+                }
+                drawWheel(monthCtx, months, monthAngle);
+            } 
+            else if (isSpinningDay) {
+                dayAngle += dayVelocity;
+                dayVelocity *= 0.985;
+                
+                if (dayVelocity < 0.002) {
+                    isSpinningDay = false;
+                    dayVelocity = 0;
+                    selectedDay = getResult(days, dayAngle);
+                    
+                    document.getElementById('status-label').innerText = "SYSTEM STATUS: ESTIMATION COMPLETE";
+                    document.getElementById('date-result').innerText = selectedMonth + " " + selectedDay;
+                    
+                    const btn = document.getElementById('spin-button');
+                    btn.disabled = false;
+                    btn.innerText = "SPIN AGAIN";
+                }
+                drawWheel(dayCtx, days, dayAngle);
+            }
+            
+            if (isSpinningMonth || isSpinningDay) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        // Draw initial static state
+        drawWheel(monthCtx, months, monthAngle);
+        drawWheel(dayCtx, days, dayAngle);
+
+        // Click Handler
+        document.getElementById('spin-button').addEventListener('click', function() {
+            if (isSpinningMonth || isSpinningDay) return;
+            
+            // Reset UI for a new spin
+            this.disabled = true;
+            this.innerText = "CALCULATING...";
+            
+            document.getElementById('day-wrapper').classList.add('hidden');
+            document.getElementById('month-wrapper').classList.remove('hidden');
+            
+            document.getElementById('status-label').innerText = "SYSTEM STATUS: CALCULATING MONTH...";
+            document.getElementById('date-result').innerText = "AWAITING SEQUENCE INITIATION";
+            
+            // Give it a random initial speed
+            isSpinningMonth = true;
+            monthVelocity = Math.random() * 0.2 + 0.4; 
+            
+            animate();
+        });
+    </script>
+</body>
+</html>
