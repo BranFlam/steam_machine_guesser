@@ -1,27 +1,41 @@
-<div id="steam-container">
-  <div id="steam-header">
-    <h2>STEAM MACHINE GUESSER</h2>
-    <div class="subtitle">When will you get yours?</div>
-  </div>
-  
-  <div class="wheels-frame">
-    <div class="wheel-wrapper">
-      <div class="pointer">▼</div>
-      <canvas id="month-wheel" width="300" height="300"></canvas>
-      <div class="wheel-label">MONTH</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam Machine Guesser</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+
+    <div id="steam-container">
+        <div id="steam-header">
+            <h2>STEAM MACHINE GUESSER</h2>
+            <div class="subtitle">When will you get yours?</div>
+        </div>
+
+        <div class="wheels-frame">
+            <div class="wheel-wrapper">
+                <div class="pointer">▼</div>
+                <canvas id="month-wheel" width="300" height="300"></canvas>
+                <div class="wheel-label">MONTH</div>
+            </div>
+
+            <div class="wheel-wrapper">
+                <div class="pointer">▼</div>
+                <canvas id="day-wheel" width="300" height="300"></canvas>
+                <div class="wheel-label">DAY</div>
+            </div>
+        </div>
+
+        <button id="spin-button">SPIN</button>
+
+        <div id="display-container">
+            <div id="status-label">SYSTEM STATUS: IDLE</div>
+            <div id="date-result">AWAITING SEQUENCE INITIATION</div>
+        </div>
     </div>
 
-    <div class="wheel-wrapper">
-      <div class="pointer">▼</div>
-      <canvas id="day-wheel" width="300" height="300"></canvas>
-      <div class="wheel-label">DAY</div>
-    </div>
-  </div>
-  
-  <button id="spin-button">SPIN</button>
-  
-  <div id="display-container">
-    <div id="status-label">SYSTEM STATUS: IDLE</div>
-    <div id="date-result">AWAITING SEQUENCE INITIATION</div>
-  </div>
-</div>
+    <script src="js.js"></script>
+</body>
+</html>
