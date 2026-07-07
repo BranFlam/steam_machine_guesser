@@ -188,11 +188,36 @@
     </div>
 
     <script>
-        // Data arrays for the wheels
-        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-        const days = Array.from({length: 31}, (_, i) => (i + 1).toString());
+        // --- DYNAMIC DATE LOGIC ---
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonthIndex = currentDate.getMonth(); 
+        const currentDay = currentDate.getDate();
 
-        // Wheel State
+        const allMonths = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+        
+        // Only include months from today until the end of the year
+        const months = allMonths.slice(currentMonthIndex);
+        let days = []; // Will be populated dynamically based on the month selected
+
+        // Function to generate the correct days for the selected month
+        function updateDays(selectedMonthStr) {
+            const monthIndex = allMonths.indexOf(selectedMonthStr);
+            let startDay = 1;
+
+            // If it lands on the current month, start the wheel from today's date
+            if (monthIndex === currentMonthIndex) {
+                startDay = currentDay;
+            }
+
+            // Get total days in that specific month
+            const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
+
+            // Generate array of days
+            return Array.from({length: daysInMonth - startDay + 1}, (_, i) => (i + startDay).toString());
+        }
+
+        // --- WHEEL STATE & SETUP ---
         let monthAngle = 0;
         let dayAngle = 0;
         let monthVelocity = 0;
@@ -202,17 +227,17 @@
         let selectedMonth = "";
         let selectedDay = "";
 
-        // Canvas Setup
         const monthCanvas = document.getElementById('month-wheel');
         const dayCanvas = document.getElementById('day-wheel');
         const monthCtx = monthCanvas.getContext('2d');
         const dayCtx = dayCanvas.getContext('2d');
 
-        // Steam-themed slice colors
         const colors = ["#2a475e", "#1b2838"];
 
         // Renders the wheel on the canvas
         function drawWheel(ctx, items, angleOffset) {
+            if (!items || items.length === 0) return;
+            
             const width = ctx.canvas.width;
             const height = ctx.canvas.height;
             const centerX = width / 2;
@@ -243,8 +268,8 @@
                 ctx.textBaseline = "middle";
                 ctx.fillStyle = "#c7d5e0";
                 
-                // Scale font size based on slice count
-                const fontSize = items.length > 12 ? 24 : 34;
+                // Scale font size down if there are a lot of slices (like 31 days)
+                const fontSize = items.length > 15 ? 20 : 34;
                 ctx.font = `bold ${fontSize}px 'Motiva Sans', Arial, sans-serif`;
                 
                 ctx.fillText(items[i], radius - 25, 0);
@@ -255,12 +280,9 @@
         // Calculates which slice is pointing to the top triangle
         function getResult(items, angleOffset) {
             const arc = 2 * Math.PI / items.length;
-            
-            // Normalize angle to 0 - 2PI
             let normalizedAngle = angleOffset % (2 * Math.PI);
             if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
 
-            // Pointer is at the top (270 degrees or 1.5 * PI)
             let topAngle = (1.5 * Math.PI - normalizedAngle) % (2 * Math.PI);
             if (topAngle < 0) topAngle += 2 * Math.PI;
 
@@ -268,7 +290,7 @@
             return items[index];
         }
 
-        // Animation Loop
+        // --- ANIMATION LOOP ---
         function animate() {
             if (isSpinningMonth) {
                 monthAngle += monthVelocity;
@@ -282,7 +304,12 @@
                     document.getElementById('status-label').innerText = "SYSTEM STATUS: MONTH SECURED";
                     document.getElementById('date-result').innerText = selectedMonth + " ...";
                     
-                    // Pause briefly, then transition to day wheel
+                    // Generate the correct days for the month it just landed on
+                    days = updateDays(selectedMonth);
+                    dayAngle = 0; 
+                    drawWheel(dayCtx, days, dayAngle); // Pre-draw the day wheel before showing it
+                    
+                    // Transition to day wheel
                     setTimeout(() => {
                         document.getElementById('month-wrapper').classList.add('hidden');
                         document.getElementById('day-wrapper').classList.remove('hidden');
@@ -304,7 +331,7 @@
                     selectedDay = getResult(days, dayAngle);
                     
                     document.getElementById('status-label').innerText = "SYSTEM STATUS: ESTIMATION COMPLETE";
-                    document.getElementById('date-result').innerText = selectedMonth + " " + selectedDay;
+                    document.getElementById('date-result').innerText = selectedMonth + " " + selectedDay + ", " + currentYear;
                     
                     const btn = document.getElementById('spin-button');
                     btn.disabled = false;
@@ -320,13 +347,13 @@
 
         // Draw initial static state
         drawWheel(monthCtx, months, monthAngle);
+        days = updateDays(months[0]); // fallback draw for day wheel
         drawWheel(dayCtx, days, dayAngle);
 
-        // Click Handler
+        // --- CLICK HANDLER ---
         document.getElementById('spin-button').addEventListener('click', function() {
             if (isSpinningMonth || isSpinningDay) return;
             
-            // Reset UI for a new spin
             this.disabled = true;
             this.innerText = "CALCULATING...";
             
@@ -336,7 +363,6 @@
             document.getElementById('status-label').innerText = "SYSTEM STATUS: CALCULATING MONTH...";
             document.getElementById('date-result').innerText = "AWAITING SEQUENCE INITIATION";
             
-            // Give it a random initial speed
             isSpinningMonth = true;
             monthVelocity = Math.random() * 0.2 + 0.4; 
             
